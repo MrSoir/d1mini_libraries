@@ -84,6 +84,15 @@ void ScheduleHandler::setServerURLs()
 	server->on("/startManualIrrigation", 	[&](){receiveManualExecutionRequest();});
 	server->on("/stopCurrentIrrigation", 	[&](){receiveStopRequest();});
 
+	server->on("/addTask",					[&](){receiveAndAddTask();});
+	server->on("/removeTask", 				[&](){receiveAndRemoveTask();});
+	server->on("/setPlan",					[&](){receiveSchedule();});
+	server->on("/clearPlan",	 			[&](){consumeClearScheduleRequest();});
+	server->on("/getPlan",					[&](){sendSchedule();});
+
+	server->on("/startManualTask", 			[&](){receiveManualExecutionRequest();});
+	server->on("/stopCurrentTask", 			[&](){receiveStopRequest();});
+
 	// example usage in browser:
 //	http://192.168.2.110/addIrrigationEntry?weekdays=1000&begin=99&duration=18
 //	http://192.168.2.110/removeIrrigationEntry?weekdays=1000&begin=99&duration=18
@@ -256,9 +265,12 @@ void ScheduleHandler::sendSchedule()
 
 void ScheduleHandler::receiveScheduleFromServer()
 {
-	String serverReqBsePth = SERVER_REQUEST_BASE_PATH + "/getIrrigationPlan";
+	String serverReqBsePth = SERVER_REQUEST_BASE_PATH + "/getPlan";
 	String irgn_pln_server_url = SF::genServerRequestUrl(serverReqBsePth, *SERVER_MDNS, *SERVER_PORT, *ARDUINO_ID);
 	
+	Serial.print("receiveScheduleFromServer: url: ");
+	Serial.println(irgn_pln_server_url);
+
 	std::tuple<DynamicJsonDocument, int> resltTpl = SF::serverGET(irgn_pln_server_url, 10000);
 	
 	auto loadedSuccessfully = std::get<1>(resltTpl);

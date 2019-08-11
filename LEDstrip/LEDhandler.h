@@ -3,6 +3,11 @@
 
 #include <Arduino.h>
 
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+#include <ESP8266mDNS.h>
+#include <ESP8266HTTPClient.h>
+
 #include <string>
 #include <vector>
 #include <math.h>
@@ -23,7 +28,10 @@
 class LEDHandler{
 public:
 	LEDHandler(std::vector<int> dataPins, 
-			   std::vector<int> ledCounts);
+			   std::vector<int> ledCounts,
+			   std::shared_ptr<ESP8266WebServer> server);
+
+	void setServerURLs();
 	
 	void setAnimation(std::shared_ptr<LEDanimation> anim);
 
@@ -33,11 +41,15 @@ public:
 	void update(unsigned long dt);
 
 private:
+	void receiveAndSetAnimation();
+
 	std::vector<LEDstrip> 	_strips;
 	std::vector<CRGB*>		_stripColors; // keep reference for fast lookup
 	std::vector<int>  		_ledCounts;
 	
 	std::shared_ptr<LEDanimation> _animation;
+
+	std::shared_ptr<ESP8266WebServer> server;
 };
 
 
