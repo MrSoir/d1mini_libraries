@@ -75,6 +75,32 @@ namespace SF
 		return sum;
 	}
 
+	std::tuple<DynamicJsonDocument,int> serverParseJSONbody(std::shared_ptr<ESP8266WebServer> server)
+	{
+		DynamicJsonDocument doc(10000);
+		
+		auto jsonRetVal = serverGetBody(server);
+
+		if(std::get<1>(jsonRetVal)){
+			auto json = std::get<0>(jsonRetVal);
+			
+			deserializeJson(doc, json);
+
+			std::make_tuple(doc, 1);
+		}else{
+			std::make_tuple(doc, 0);
+		}		
+	}
+
+	std::tuple<String,int> serverGetBody(std::shared_ptr<ESP8266WebServer> server)
+	{
+		if (server->hasArg("plain")== false){ //Check if body received
+			std::make_tuple("", 0);
+		}else{
+			return std::make_tuple(server->arg("plain"), 1);
+		}
+	}
+
 	std::tuple<DynamicJsonDocument, int> serverGET(String url, const size_t bufferSize, const uint16_t timeout)
 	{
 		DynamicJsonDocument jsonDoc(bufferSize);
@@ -82,13 +108,16 @@ namespace SF
 		
 		if (WiFi.status() == WL_CONNECTED) {
 			HTTPClient http;
-	//		http.setTimeout(timeout);
+			http.setTimeout(timeout);
 
 			http.begin( url );
 			int httpCode = http.GET();
 			if(httpCode > 0)
 			{
 				auto http_str = http.getString();
+				Serial.print("serverGET -> http_str: ");
+				Serial.println(http_str);
+				
 				deserializeJson(jsonDoc, http_str);
 
 				retValidationCode = 1;

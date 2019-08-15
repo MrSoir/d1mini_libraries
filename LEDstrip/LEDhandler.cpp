@@ -12,7 +12,7 @@ LEDHandler::LEDHandler(std::vector<int> dataPins,
 	//   ,_animation( std::make_shared<StaticLEDanimation>(CRGB(255,0,0)) )
 {
 	std::vector<CRGB> animColors = {CRGB(255,0,0), CRGB(255,0,255), CRGB(0,0,255)};
-	unsigned long animDuration = 1000;
+	unsigned long animDuration = 10000;
 
 	_animation = std::shared_ptr<SmoothColorTransition>(
 					new SmoothColorTransition(animColors, animDuration));

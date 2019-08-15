@@ -38,6 +38,9 @@ namespace SF
 
 	int arrayToDaysWofWeek(JsonArray arr);
 
+	std::tuple<DynamicJsonDocument,int> serverParseJSONbody(std::shared_ptr<ESP8266WebServer> server);
+	std::tuple<String,int> serverGetBody(std::shared_ptr<ESP8266WebServer> server);
+
 	std::tuple<DynamicJsonDocument, int> serverGET(String url, const size_t bufferSize = 100, const uint16_t timeout = 10000);
 	String genServerRequestUrl(String urlRelPath, const String& SERVER_MDNS, const String& SERVER_PORT, const String& ARDUINO_ID);
 
