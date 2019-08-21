@@ -114,7 +114,7 @@ bool MoistureSensorHandler::checkIfSoilIsDry()
 			}
 		}
 	}
-	//Serial.println(); //kk
+	//Serial.println();
 	return false;
 }
 
