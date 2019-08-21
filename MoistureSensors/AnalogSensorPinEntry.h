@@ -26,53 +26,55 @@
 //---------------------------------------------------
 
 enum SensorType{
-  MOISTURE_SENSOR,
-  TEMP_SENSOR,
-  LIGHT_SENSOR,
-  ANY
+	MOISTURE_SENSOR,
+	TEMP_SENSOR,
+	LIGHT_SENSOR,
+	ANY
 };
 
 //---------------------------------------------------
 
 class AnalogSensorPinEntry{
 public:
-  AnalogSensorPinEntry(String id,
-                       int pin,
-                       float sensitivity=0.5,
-                       float value=0.0,
-                       float minAbsValue=0.0,
-                       float maxAbsValue=1000.0,
-                       SensorType type=SensorType::MOISTURE_SENSOR);
-  
-  String id;
-  int pin;
-  float sensitivity;
+	AnalogSensorPinEntry(String id,
+						 int pin,
+						 float sensitivity=0.5,
+						 float value=0.0,
+						 float minAbsValue=0.0,
+						 float maxAbsValue=1000.0,
+						 SensorType type=SensorType::MOISTURE_SENSOR);
+	
+	String id;
+	int pin;
+	float sensitivity;
 private:
-  float value;
-  float minAbsValue;
-  float maxAbsValue;
+	float value;
+	float minAbsValue;
+	float maxAbsValue;
+
+	float mapAbsValue(float absVal);
 public:
-  SensorType type;
-  bool triggerIfSensorValueGreaterThanThreshold = true;
+	SensorType type;
+	bool triggerIfSensorValueGreaterThanThreshold = true;
 
 
 //-------------
-  void setMinAbsValue(float minAbsValue);
-  void setMinAbsValue(int minAbsValue);
-  
-  void setMaxAbsValue(float maxAbsValue);
-  void setMaxAbsValue(int maxAbsValue);
+	void setMinAbsValue(float minAbsValue);
+	void setMinAbsValue(int minAbsValue);
+	
+	void setMaxAbsValue(float maxAbsValue);
+	void setMaxAbsValue(int maxAbsValue);
 //-------------
-  void setAbsValue(float value);
-  void setAbsValue(int value);
+	void setAbsValue(float value);
+	void setAbsValue(int value);
 //-------------
-  void setRelValue(float value);
-  void setRelValue(int value);
+	void setRelValue(float value);
+	void setRelValue(int value);
 //-------------
-  float absValue() const;
-  float relValue() const;
+	float absValue() const;
+	float relValue() const;
 //-------------
-  bool shallTrigger() const;
+	bool shallTrigger() const;
 };
 
 #endif

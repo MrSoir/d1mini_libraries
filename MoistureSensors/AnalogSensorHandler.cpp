@@ -48,7 +48,9 @@ AnalogSensorHandler::AnalogSensorHandler(std::shared_ptr<ESP8266WebServer> serve
 	
 		UNIX_TIME(UNIX_TIME),
 		UNIX_DAY_OFFSET(UNIX_DAY_OFFSET)
-	{}
+	{
+		setServerURLs();
+	}
 
 //-----------------------------------------
 // ServerDataUpdater-derived function:
@@ -59,15 +61,100 @@ void AnalogSensorHandler::consumeDailyServerData(DynamicJsonDocument& JSONdoc)
 	replaceAnalogSensorEntries(sensors);
 }
 
+
+void AnalogSensorHandler::setServerURLs()
+{
+	server->on("/addAnalogSensorEntry",			[&](){receiveAndConsumeAnalogSensorEntry();});
+	server->on("/removeAnalogSensorEntry",		[&](){removeAnalogSensorEntry();});
+	server->on("/getAnalogSensorEntries",		[&](){sendAnalogSensorEntries();});
+	server->on("/getAnalogSensorValues",		[&](){sendAnalogSensorValues();});
+	server->on("/clearAnalogSensorEntries",		[&](){clearAnalogSensorEntries();});
+	
+//	server->on("/setAnalogSensorMinMaxValues",	[&](){receiveAndConsumeAnalogSensorMinMaxValues();});
+}
+
 //-----------------------------------------
 
-void AnalogSensorHandler::addAnalogSensorEntry()
+/*
+void AnalogSensorHandler::receiveAndConsumeAnalogSensorMinMaxValues()
+{
+	auto potJSONdoc = SF::serverParseJSONbody(server);
+	if(std::get<1>(potJSONdoc) == 1){
+
+		auto JSONdoc = std::get<0>(potJSONdoc);
+
+		int minVal = JSONdoc["min"];
+		int maxVal = JSONdoc["max"];
+
+		MIN_MOISTURE_SENSOR_VALUE = minVal;
+		MAX_MOISTURE_SENSOR_VALUE = maxVal;
+
+		for(auto& pe: ANALOG_SEN_ENTRIES){
+			pe.setMinAbsValue(minVal);
+			pe.setMaxAbsValue(maxVal);
+		}
+
+		String msg("successfully received Analog Sensor Min- & Max-Values!");
+		server->send(200, "text/plain", msg);
+	}
+}
+void AnalogSensorHandler::replaceAnalogMinMaxValues(const JsonArray& sensors)
+{
+	Serial.println("replaceAnalogSensorEntries - clearing old analog entries");
+	clearAnalogSensorEntries();
+
+	Serial.print("replaceAnalogSensorEntries:\nmoistureSensors.size: ");
+	Serial.println(sensors.size());
+	
+	for(int i=0; i < sensors.size(); ++i)
+	{
+		auto snsr = sensors[i];
+		String id					 = snsr["id"];
+		int pin						 = snsr["pin"];
+		float sensitivity	 		 = snsr["sensitivity"];
+
+		int minVal 				 	 = snsr["min"];
+		int maxVal 				 	 = snsr["max"];
+
+		Serial.print("	moistSensor[");
+		Serial.print(i);
+		Serial.print("] -> id: ");
+		Serial.print(id);
+		Serial.print(", pin: ");
+		Serial.print(pin);
+		Serial.print(", sensitivity");
+		Serial.println(sensitivity);
+
+		auto ase = AnalogSensorPinEntry(id, pin, sensitivity);
+		ase.setMinAbsValue(minVal);
+		ase.setMaxAbsValue(maxVal);
+		
+		ANALOG_SEN_ENTRIES.push_back( ase );
+		multiplexer.addSensor(pin);
+	}
+}*/
+
+void AnalogSensorHandler::receiveAndConsumeAnalogSensorEntry()
 {
 	auto id = server->arg("id");
 	auto pin = server->arg("pin").toInt();
 	auto sensitivity = server->arg("sensitivity").toFloat();
 	
-	ANALOG_SEN_ENTRIES.push_back( AnalogSensorPinEntry(id, pin, sensitivity) );
+	addAnalogSensorEntry(id, pin, sensitivity, SensorType::MOISTURE_SENSOR);
+}
+
+void AnalogSensorHandler::addAnalogSensorEntry( String id,
+			               int pin,
+			               float sensitivity,
+			               SensorType type)
+{
+	ANALOG_SEN_ENTRIES.push_back( AnalogSensorPinEntry(	id, 
+														pin, 
+														sensitivity, 
+														0, 
+														MIN_MOISTURE_SENSOR_VALUE, 
+														MAX_MOISTURE_SENSOR_VALUE,
+														type) );
 	multiplexer.addSensor(pin);
 }
 
@@ -153,15 +240,6 @@ String AnalogSensorHandler::genAnalogSensorValuesJSONstr(SensorType tarType)
 	return genAnalogSensorJSONstr_hlpr(tarType, generateJSONSensorValue);
 }
 
-String AnalogSensorHandler::genMoisturesSensorEntriesJSONstr()
-{
-	return genAnalogSensorEntriesJSONstr(SensorType::MOISTURE_SENSOR);
-}
-String AnalogSensorHandler::genMoisturesSensorValuesJSONstr()
-{
-	return genAnalogSensorValuesJSONstr(SensorType::MOISTURE_SENSOR);
-}
-
 void AnalogSensorHandler::sendAnalogSensorEntries()
 {
 	String JSONstr = genAnalogSensorEntriesJSONstr();
@@ -175,21 +253,11 @@ void AnalogSensorHandler::sendAnalogSensorValues()
 	server->send(200, "text/plain", JSONstr);
 }
 
-void AnalogSensorHandler::sendMoistureSensorEntries(){
-	String JSONstr = genMoisturesSensorEntriesJSONstr();
-	
-	server->send(200, "text/plain", JSONstr);
-}
-void AnalogSensorHandler::sendMoistureSensorValues(){
-	String JSONstr = genMoisturesSensorValuesJSONstr();
-	
-	server->send(200, "text/plain", JSONstr);
-}
-
 //----------------
 
 void AnalogSensorHandler::replaceAnalogSensorEntries(const JsonArray& sensors)
 {
+	Serial.println("replaceAnalogSensorEntries - clearing old analog entries");
 	clearAnalogSensorEntries();
 
 	Serial.print("replaceAnalogSensorEntries:\nmoistureSensors.size: ");
@@ -210,21 +278,24 @@ void AnalogSensorHandler::replaceAnalogSensorEntries(const JsonArray& sensors)
 		Serial.print(pin);
 		Serial.print(", sensitivity");
 		Serial.println(sensitivity);
-		
-		ANALOG_SEN_ENTRIES.push_back( AnalogSensorPinEntry(id, pin, sensitivity) );
-		multiplexer.addSensor(pin);
+
+		addAnalogSensorEntry(id, pin, sensitivity, SensorType::MOISTURE_SENSOR);
 	}
 }
 
 void AnalogSensorHandler::receiveAndConsumeAnalogSensorEntries()
 {
 	auto potJSONdoc = SF::serverParseJSONbody(server);
-	if(std::get<1>(potJSONdoc)){
+	if(std::get<1>(potJSONdoc) == 1){
+
 		auto JSONdoc = std::get<0>(potJSONdoc);
-		
+
 		JsonArray sensors = JSONdoc["sensors"];
-		
+
 		replaceAnalogSensorEntries(sensors);
+
+		String msg("successfully received Analog Sensor Entries!");
+		server->send(200, "text/plain", msg);
 	}
 }
 
@@ -246,6 +317,20 @@ void AnalogSensorHandler::readAnalogPins()
 	for(int i=0; i < ANALOG_SEN_ENTRIES.size(); ++i)
 	{
 		int pin = ANALOG_SEN_ENTRIES[i].pin;
-		ANALOG_SEN_ENTRIES[i].setAbsValue( multiplexer.getSensorValue(pin) );
+		auto sensorVal = multiplexer.getSensorValue(pin);
+
+		ANALOG_SEN_ENTRIES[i].setAbsValue( sensorVal );
+
+/*		Serial.print("Sensor[");
+		Serial.print(pin);
+		Serial.print("]: ");
+		Serial.print(sensorVal);
+		Serial.print("	|	abs: ");
+		Serial.print(ANALOG_SEN_ENTRIES[i].absValue());
+		Serial.print("	rel: ");
+		Serial.println(ANALOG_SEN_ENTRIES[i].relValue());*/
 	}
+//	Serial.println();
+
+	lastTimeValuesRead = *UNIX_TIME;
 }

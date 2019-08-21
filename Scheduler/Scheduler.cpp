@@ -35,6 +35,9 @@ bool Scheduler::isRunning(unsigned long UNIX_TIME)
 		stop();
 		return false;
 	}else{
+/*		Serial.print("is running for: ");
+		Serial.print(executionEnd - UNIX_TIME);
+		Serial.println("	seconds");*/
 		return true;
 	}
 }
@@ -71,7 +74,7 @@ void Scheduler::setExecutionEnd(unsigned long irrigEnd)
 
 void Scheduler::resetExecutionStarts(ScheduleBD& schedule, unsigned long UNIX_TIME)
 {
-	 schedule.resetExecutionStarts();
+	schedule.resetExecutionStarts();
 	
 	lastResetDayOffset = UNIX_TIME / 86400;
 }

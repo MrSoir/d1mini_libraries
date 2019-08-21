@@ -38,20 +38,25 @@ bool RecurringTask::operator==(const Task& ie) const
 	return false;
 }
 
-bool RecurringTask::shouldStart(unsigned long UNIX_TIME, int UNIX_DAY_OFFSET) const
+bool RecurringTask::executesThisCurrentDay(unsigned long UNIX_TIME, int UNIX_DAY_OFFSET) const
 {
 	int curDay = SF::evalCurrentDayOfWeek(UNIX_TIME, UNIX_DAY_OFFSET);
 	std::vector<bool> wds = SF::daysOfWeekIntToBoolArr(weekdays);
-	if(wds[curDay])
+	return wds[curDay];
+}
+bool RecurringTask::shouldStart(unsigned long UNIX_TIME, int UNIX_DAY_OFFSET) const
+{
+	bool executesToday = executesThisCurrentDay(UNIX_TIME, UNIX_DAY_OFFSET);
+	if(executesToday)
 	{
 		// tag passt schonmal, jetzt noch die uhrzeit pruefen:
-		unsigned long curDayBegin = UNIX_TIME - UNIX_TIME % 86400;
+		unsigned long curDayBegin = SF::evalCurrentDayBegin(UNIX_TIME);//UNIX_TIME - UNIX_TIME % 86400;
 		
 		unsigned long unixBegin = curDayBegin + begin;
-		unsigned long unixEnd	 = unixBegin	 + duration;
+		unsigned long unixEnd	= unixBegin	 + duration;
 		
 		if(UNIX_TIME >= unixBegin &&
-			 UNIX_TIME <	unixEnd)
+		   UNIX_TIME <	unixEnd)
 		{
 			return true;
 		}
@@ -69,46 +74,89 @@ unsigned long RecurringTask::getNextEndTime(unsigned long UNIX_TIME, int UNIX_DA
 
 unsigned long RecurringTask::getStartTime(unsigned long UNIX_TIME, int UNIX_DAY_OFFSET) const
 {
-	return getNextStartTime(UNIX_TIME, UNIX_DAY_OFFSET);
+	// difference between getStartTime and getNextStartTime:
+	//	if task is currently supposed to run (curBegin <= UNIX_TIME <= curEnd)
+	// 	then getStartTime lies in the past!
+	// whereas getNextStartTime always seraches for the next start > UNIX_TIME!!
+	if(	shouldStart(UNIX_TIME, UNIX_DAY_OFFSET) )
+	{
+		unsigned long curDayBegin = SF::evalCurrentDayBegin(UNIX_TIME);//UNIX_TIME - UNIX_TIME % 86400;
+		
+		unsigned long unixBegin = curDayBegin + begin;
+		
+		return unixBegin;
+	}else{
+		return getNextStartTime(UNIX_TIME, UNIX_DAY_OFFSET);
+	}
 }
 unsigned long RecurringTask::getEndTime(unsigned long UNIX_TIME, int UNIX_DAY_OFFSET) const
 {
-	return getNextEndTime(UNIX_TIME, UNIX_DAY_OFFSET);
+	if(	shouldStart(UNIX_TIME, UNIX_DAY_OFFSET) )
+	{
+		unsigned long curDayBegin = SF::evalCurrentDayBegin(UNIX_TIME);//UNIX_TIME - UNIX_TIME % 86400;
+		
+		unsigned long unixBegin = curDayBegin + begin;
+		unsigned long unixEnd	= unixBegin	 + duration;
+		
+		return unixEnd;
+	}else{
+		return getNextEndTime(UNIX_TIME, UNIX_DAY_OFFSET);
+	}
 }
 
+bool RecurringTask::alreadyExecutedToday(unsigned long UNIX_TIME, int UNIX_DAY_OFFSET) const
+{
+	auto wds = SF::daysOfWeekIntToBoolArr(weekdays);
+	auto curDay = SF::evalCurrentDayOfWeek(UNIX_TIME, UNIX_DAY_OFFSET);
+	
+	unsigned long curDayBegin = SF::evalCurrentDayBegin(UNIX_TIME);//UNIX_TIME - UNIX_TIME % 86400;
+	
+	return wds[curDay] && curDayBegin >= begin;
+}
 unsigned long RecurringTask::timeTilNextExecution(unsigned long UNIX_TIME, int UNIX_DAY_OFFSET) const
 {
-	unsigned long dt = 0;
-	
-	int curDay = SF::evalCurrentDayOfWeek(UNIX_TIME, UNIX_DAY_OFFSET);
-	
-	std::vector<bool> wds = SF::daysOfWeekIntToBoolArr(weekdays);
-	
-	for(int d=curDay; d < curDay + 7; ++d)
+	if( shouldStart(UNIX_TIME, UNIX_DAY_OFFSET) )
 	{
-		int cwd = d % 7;
-		bool willIrrigateToday = false;
+		return 0;
+	}
 
-		auto curDayTime = (d == curDay) ? UNIX_TIME % 86400 : 0;
+	unsigned long dt = 0;
+
+	if( executesThisCurrentDay(UNIX_TIME, UNIX_DAY_OFFSET) )
+	{
+		unsigned long curDayBegin = SF::evalCurrentDayBegin(UNIX_TIME);//UNIX_TIME - UNIX_TIME % 86400;
 		
-		if( wds[cwd] && begin >= curDayTime )
+		if( alreadyExecutedToday(UNIX_TIME, UNIX_DAY_OFFSET) )
 		{
-			willIrrigateToday = true;
-		}
-		
-		if( willIrrigateToday )
-		{
-			dt += begin - curDayTime;
+			dt += 86400 - curDayBegin;
 		}else{
-			auto restTimeOfDay = 86400 - curDayTime;
-			dt += restTimeOfDay;
+			return begin - curDayBegin;
 		}
 	}
+
+	auto wds = SF::daysOfWeekIntToBoolArr(weekdays);
+	auto curWeekDay = (SF::evalCurrentDayOfWeek(UNIX_TIME, UNIX_DAY_OFFSET) + 1) % 7;
+
+	for(int i=0; i < 7; ++i){
+		if( wds[curWeekDay] ){
+			dt += begin;
+			return dt;
+		}else{
+			dt += 86400;
+		}
+		++curWeekDay;
+	}
+	
 	return dt;
 }
 unsigned long RecurringTask::timeTilExecution(unsigned long UNIX_TIME, int UNIX_DAY_OFFSET) const
 {
-	return timeTilNextExecution(UNIX_TIME, UNIX_DAY_OFFSET);
+	if(	shouldStart(UNIX_TIME, UNIX_DAY_OFFSET) )
+	{
+		return 0;
+	}else{
+		return timeTilNextExecution(UNIX_TIME, UNIX_DAY_OFFSET);
+	}
 }
 
 String RecurringTask::toArduinoString() const

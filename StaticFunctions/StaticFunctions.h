@@ -35,6 +35,7 @@ namespace SF
 	int powInt(int base, int exponent);
 
 	std::vector<bool> daysOfWeekIntToBoolArr(int powerVal);
+	unsigned long evalCurrentDayBegin(unsigned long UNIX_TIME);
 
 	int arrayToDaysWofWeek(JsonArray arr);
 

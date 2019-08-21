@@ -64,6 +64,10 @@ namespace SF
 		}
 		return dow;
 	}
+	unsigned long evalCurrentDayBegin(unsigned long UNIX_TIME)
+	{
+		return UNIX_TIME - UNIX_TIME % 86400;
+	}
 
 	int arrayToDaysWofWeek(JsonArray arr)
 	{
@@ -83,19 +87,22 @@ namespace SF
 
 		if(std::get<1>(jsonRetVal)){
 			auto json = std::get<0>(jsonRetVal);
+
+			Serial.print("SF::serverParseJSONbody - json: ");
+			Serial.println(json);
 			
 			deserializeJson(doc, json);
 
-			std::make_tuple(doc, 1);
+			return std::make_tuple(doc, 1);
 		}else{
-			std::make_tuple(doc, 0);
+			return std::make_tuple(doc, 0);
 		}		
 	}
 
 	std::tuple<String,int> serverGetBody(std::shared_ptr<ESP8266WebServer> server)
 	{
 		if (server->hasArg("plain")== false){ //Check if body received
-			std::make_tuple("", 0);
+			return std::make_tuple("", 0);
 		}else{
 			return std::make_tuple(server->arg("plain"), 1);
 		}
@@ -108,7 +115,7 @@ namespace SF
 		
 		if (WiFi.status() == WL_CONNECTED) {
 			HTTPClient http;
-			http.setTimeout(timeout);
+//			http.setTimeout(timeout);
 
 			http.begin( url );
 			int httpCode = http.GET();

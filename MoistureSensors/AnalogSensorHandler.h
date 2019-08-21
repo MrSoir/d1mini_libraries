@@ -58,7 +58,7 @@ public:
 						float MIN_MOISTURE_SENSOR_VALUE = 200.0,
 						float MAX_MOISTURE_SENSOR_VALUE = 1000.0,
 
-						int MAX_WAIT_PERIOD_ON_DRY_SOIL = 5 * 60 * 60);
+						int MAX_WAIT_PERIOD_ON_DRY_SOIL = 2 * 60 * 60);
 
 
 protected:
@@ -66,7 +66,7 @@ protected:
 	
 	Multiplexer multiplexer;
 
-	int MAX_WAIT_PERIOD_ON_DRY_SOIL = 5 * 60 * 60;
+	int MAX_WAIT_PERIOD_ON_DRY_SOIL = 2 * 60 * 60;
 	
 	float MIN_MOISTURE_SENSOR_VALUE = 200.0;
 	float MAX_MOISTURE_SENSOR_VALUE = 1000.0;
@@ -92,7 +92,9 @@ protected:
 	void receiveAndConsumeAnalogSensorEntries();
 
 public:
-	void addAnalogSensorEntry();
+	void setServerURLs();
+
+	void receiveAndConsumeAnalogSensorEntry();
 
 	void removeAnalogSensorEntry();
 
@@ -100,6 +102,9 @@ public:
 
 
 protected:
+	void receiveAndConsumeAnalogSensorMinMaxValues();
+	void replaceAnalogMinMaxValues();
+
 	String genAnalogSensorJSONstr_hlpr(SensorType tarType, 
 									   void (*JSONGenerator)(const AnalogSensorPinEntry& entry, JsonArray JSONsensors));
 
@@ -107,18 +112,18 @@ protected:
 
 	String genAnalogSensorValuesJSONstr(SensorType tarType = SensorType::ANY);
 
-	String genMoisturesSensorEntriesJSONstr();
-	String genMoisturesSensorValuesJSONstr();
-
 	void sendAnalogSensorEntries();
 	void sendAnalogSensorValues();
-
-	void sendMoistureSensorEntries();
-	void sendMoistureSensorValues();
 
 	void replaceAnalogSensorEntries(const JsonArray& sensors);
 
 	void readAnalogPins();
+	unsigned long lastTimeValuesRead = 0;
+
+	void addAnalogSensorEntry( String id,
+				               int pin,
+				               float sensitivity,
+				               SensorType type);
 };
 
 #endif

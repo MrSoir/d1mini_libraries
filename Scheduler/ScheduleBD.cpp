@@ -51,8 +51,6 @@ const std::vector<Task*>& ScheduleBD::entries() const
 
 void ScheduleBD::startEntries(Scheduler& scheduler, unsigned long UNIX_TIME, int UNIX_DAY_OFFSET)
 {
-	auto entriesCount = _entries.size();
-
 	for(int i=0; i < _entries.size(); ++i)
 	{
 		if(_entries[i]->shouldStart(UNIX_TIME, UNIX_DAY_OFFSET) && !_entries[i]->started)
@@ -91,6 +89,12 @@ void ScheduleBD::startTask(Task* ie, Scheduler& scheduler, unsigned long UNIX_TI
 	auto endTime = ie->getEndTime(UNIX_TIME, UNIX_DAY_OFFSET);
 	ie->started = true;
 	scheduler.setExecutionEnd( endTime );
+	Serial.print("ScheduleBD::startTask -> starting task: endTime: ");
+	Serial.print(endTime);
+	Serial.print("	UNIX_TIME: ");
+	Serial.print(UNIX_TIME);
+	Serial.print("	diff: ");
+	Serial.println(endTime - UNIX_TIME);
 }
 
 unsigned long ScheduleBD::timeTilNextExecution(unsigned long UNIX_TIME, int UNIX_DAY_OFFSET) const

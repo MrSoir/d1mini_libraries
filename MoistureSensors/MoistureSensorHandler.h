@@ -60,10 +60,12 @@ public:
 							float MIN_MOISTURE_SENSOR_VALUE = 200.0,
 							float MAX_MOISTURE_SENSOR_VALUE = 1000.0,
 
-							int MAX_WAIT_PERIOD_ON_DRY_SOIL = 5 * 60 * 60);
+							int MAX_WAIT_PERIOD_ON_DRY_SOIL = 2 * 60 * 60);
 
 private:
 	std::shared_ptr<ScheduleHandler> scheduleHndlr;
+	unsigned long lastTimeDrySoilChecked = 0;
+	unsigned long CHECK_FOR_DROUGHT_INTERVAL = 60 * 10; // check for dry soil every 10 minutes
 
 public:
 	void setServerURLs();
@@ -88,6 +90,13 @@ public:
 	void checkForIrrigationDueToDryness();
 
 	bool temperatureOkForIrrigation();
+
+protected:
+	String genMoisturesSensorEntriesJSONstr();
+	String genMoisturesSensorValuesJSONstr();
+
+	void sendMoistureSensorEntries();
+	void sendMoistureSensorValues();
 };
 
 #endif

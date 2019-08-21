@@ -49,6 +49,10 @@ public:
 
 	virtual void print() const override;
 	virtual void println() const override;
+
+private:
+	bool executesThisCurrentDay(unsigned long UNIX_TIME, int UNIX_DAY_OFFSET) const;
+	bool alreadyExecutedToday(unsigned long UNIX_TIME, int UNIX_DAY_OFFSET) const;
 };
 
 

@@ -49,14 +49,9 @@ MoistureSensorHandler::MoistureSensorHandler(std::shared_ptr<ScheduleHandler> sc
 
 void MoistureSensorHandler::setServerURLs()
 {
-	server->on("/addAnalogSensorEntry",		[&](){addAnalogSensorEntry();});
-	server->on("/removeAnalogSensorEntry",	[&](){removeAnalogSensorEntry();});
-	server->on("/getAnalogSensorEntries",	[&](){sendAnalogSensorEntries();});
-	server->on("/getAnalogSensorValues",	[&](){sendAnalogSensorValues();});
-	server->on("/getMoistureSensorEntries",	[&](){sendMoistureSensorEntries();});
-	server->on("/getMoistureSensorValues",	[&](){sendMoistureSensorValues();});
-	server->on("/setAnalogSensorEntries",	[&](){receiveAndConsumeAnalogSensorEntries();});
-	server->on("/clearAnalogSensorEntries",	[&](){clearAnalogSensorEntries();});
+	server->on("/getMoistureSensorEntries",		[&](){sendMoistureSensorEntries();});
+	server->on("/getMoistureSensorValues",		[&](){sendMoistureSensorValues();});
+	server->on("/setMoistureSensorEntries",		[&](){receiveAndConsumeAnalogSensorEntries();});
 }
 
 void MoistureSensorHandler::update()
@@ -65,9 +60,38 @@ void MoistureSensorHandler::update()
 }
 
 //---------------------------------------------------------
+String MoistureSensorHandler::genMoisturesSensorEntriesJSONstr()
+{
+	return genAnalogSensorEntriesJSONstr(SensorType::MOISTURE_SENSOR);
+}
+String MoistureSensorHandler::genMoisturesSensorValuesJSONstr()
+{
+	return genAnalogSensorValuesJSONstr(SensorType::MOISTURE_SENSOR);
+}
+
+
+void MoistureSensorHandler::sendMoistureSensorEntries(){
+	String JSONstr = genMoisturesSensorEntriesJSONstr();
+	
+	server->send(200, "text/plain", JSONstr);
+}
+void MoistureSensorHandler::sendMoistureSensorValues(){
+	String JSONstr = genMoisturesSensorValuesJSONstr();
+	
+	server->send(200, "text/plain", JSONstr);
+}
+
+//---------------------------------------------------------
 
 bool MoistureSensorHandler::checkIfSoilIsDry()
 {
+	// alle 10 Minuten checken reicht vollkommen aus:
+	if((*UNIX_TIME - lastTimeDrySoilChecked) < CHECK_FOR_DROUGHT_INTERVAL){
+		return false;
+	}
+
+	lastTimeDrySoilChecked = *UNIX_TIME; 
+
 	readAnalogPins();
 
 	int i=0;
@@ -81,6 +105,8 @@ bool MoistureSensorHandler::checkIfSoilIsDry()
 			Serial.print(entry.absValue());
 			Serial.print("	relValue: ");
 			Serial.println(entry.relValue());
+			Serial.print("	sensitivity: ");
+			Serial.println(entry.sensitivity);
 			if(entry.shallTrigger())
 			{
 				Serial.println("sensor is triggering!");
@@ -88,7 +114,7 @@ bool MoistureSensorHandler::checkIfSoilIsDry()
 			}
 		}
 	}
-	Serial.println();
+	//Serial.println();
 	return false;
 }
 
@@ -108,12 +134,18 @@ void MoistureSensorHandler::addDroughtIrrigationEntries()
 	auto begin = *UNIX_TIME;
 	for(int i=0; i < 3; ++i)
 	{
-		auto* oneTimer = new OneTimerTask(begin, 60 * 2 + 30);
-		
+		auto dur = 60 * 2;
+		Serial.print("adding drought-oneTimer:	begin: ");
+		Serial.print(begin);
+		Serial.print("	duration: ");
+		Serial.println(dur);
+		auto* oneTimer = new OneTimerTask(begin, dur);
 		scheduleHndlr->schedule.add(oneTimer);
 
 		begin += 5 * 60;
 	}
+	Serial.println("	-> addDroughtIrrigationEntries - updated plan:");
+	scheduleHndlr->schedule.printEntries();
 }
 
 void MoistureSensorHandler::checkForIrrigationDueToDryness()

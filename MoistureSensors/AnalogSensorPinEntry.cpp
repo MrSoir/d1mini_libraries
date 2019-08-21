@@ -34,8 +34,15 @@ void AnalogSensorPinEntry::setMaxAbsValue(int maxAbsValue){
 	this->setMaxAbsValue(maxValueflt);
 }
 //-------------
-void AnalogSensorPinEntry::setAbsValue(float value){
-	this->value = (value - minAbsValue) / (maxAbsValue - minAbsValue);
+float AnalogSensorPinEntry::mapAbsValue(float absValue)
+{
+	absValue = absValue < minAbsValue ? minAbsValue : absValue;
+	absValue = absValue > maxAbsValue ? maxAbsValue : absValue;
+	return absValue;
+}
+void AnalogSensorPinEntry::setAbsValue(float absValue){
+	absValue = mapAbsValue(absValue);
+	this->value = (absValue - minAbsValue) / (maxAbsValue - minAbsValue);
 }
 void AnalogSensorPinEntry::setAbsValue(int value){
 	float valueflt = static_cast<float>(value);
