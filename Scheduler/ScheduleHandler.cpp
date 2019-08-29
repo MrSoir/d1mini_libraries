@@ -86,9 +86,9 @@ void ScheduleHandler::setServerURLs()
 
 	server->on("/addTask",					[&](){receiveAndAddTask();});
 	server->on("/removeTask", 				[&](){receiveAndRemoveTask();});
-	server->on("/setPlan",					[&](){receiveSchedule();});
-	server->on("/clearPlan",	 			[&](){consumeClearScheduleRequest();});
-	server->on("/getPlan",					[&](){sendSchedule();});
+	server->on("/setSchedule",				[&](){receiveSchedule();});
+	server->on("/clearSchedule",	 		[&](){consumeClearScheduleRequest();});
+	server->on("/getSchedule",				[&](){sendSchedule();});
 
 	server->on("/startManualTask", 			[&](){receiveManualExecutionRequest();});
 	server->on("/stopCurrentTask", 			[&](){receiveStopRequest();});
