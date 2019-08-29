@@ -13,7 +13,7 @@ git add ./pushToGit.sh
 
 git commit -m "bashed update"
 
-git remote rm origin
+sudo git remote rm origin
 
 git remote add origin "https://github.com/MrSoir/d1mini_libraries.git"
 
