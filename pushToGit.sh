@@ -4,7 +4,7 @@ set -e;
 
 git add ./DigitalSensor
 git add ./LEDstrip
-sudo git add ./MoistureSensors        
+git add ./MoistureSensors        
 git add ./Multiplexer
 git add ./Scheduler
 git add ./StaticFunctions
